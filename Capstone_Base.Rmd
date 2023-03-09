@@ -1,0 +1,377 @@
+---
+title: ' Google Data Analytics Capstone Project'
+author: "Timothy Dill"
+date: "March 2023"
+output:
+  pdf_document: default
+  html_document: default
+---
+![](C:\Users\tim28\Desktop\R Projects\Capstone Project\Cover_Picture.png)
+
+# *About the company*
+In 2016, Cyclistic launched a successful bike-share offering having a fleet of 5,824 bicycles that are tracked and locked into a network of 692 stations across Chicago. The bikes can be unlocked from one station and returned to any other station in the system at any time.
+Riders who have an annual subscription are called members while riders who are single-ride or full-day pass users are considered casual riders.
+The director of marketing is looking to maximize the number of annual memberships as they are more profitable than single-ride or full-day passes. This strategy is believed to be the key to future growth.
+
+# *OVERVIEW*
+## The following data analysis steps will be followed:
+### **Ask, Prepare, Process, Analyze, Share, Act**
+
+# *ASK*
+
+## The primary question that needs to be answered is:
+
+**How do annual members and casual riders use Cyclistic bikes differently?**
+
+
+A set of requirements are as follows: 
+
+You will produce a report with the following deliverable objectives:
+
+1. A clear statement of the business task
+
+2. A description of all data sources used
+
+3. Documentation of any cleaning or manipulation of data
+
+4. A summary of your analysis
+
+5. Supporting visualizations and key findings
+
+6. Your top three recommendations based on your analysis
+
+All of these will be answered at the end of the R code.
+
+## *PREPARE*
+### The dataset follows the guidelines of ROCCC as described below:
+**Reliable** - Yes, no detectable bias
+
+**Original** Yes, relocatable as public data
+
+**Comprehensive** - Yes, no vital information missing
+
+**Current** - Yes, updated monthly by company
+
+**Cited** - Yes
+
+Datasets used are public and located [here](https://divvy-tripdata.s3.amazonaws.com/index.html) and are made available by Motivate International Inc. under this [license](https://ride.divvybikes.com/data-license-agreement)
+
+### Steps of this section:
+  * Downloaded data from the last year and saved copies on my computer
+  * Downloaded data from Feb 22 - Jan 23
+  * Found within each dataset it shows the same 13 columns
+
+
+## *PROCESS*  
+### Creating our workspace in R
+
+### Steps of this section:
+  * Create the work environment to be used for collection, transformation and analysis
+  * Import data sets
+  * Merge all data sources into a single file for further work to ensure the original files are left intact 
+
+Included the requirement functions to allow anyone to run code after the csv inputs are changed, this allows us to export the code and replicate our analysis with new data and get similar outcomes, with new data.
+
+```{R Enviroment_setup, echo=FALSE, message=FALSE, warning=FALSE}
+
+if (!require('lubridate'))
+{
+  install.packages("lubridate")
+}
+if (!require('tidyverse'))
+{
+  install.packages("tidyverse")
+}
+if (!require('ggplot2'))
+{
+  install.packages("ggplot2")
+}
+if (!require('dplyr'))
+{
+install.packages("dplyr")
+}
+if (!require('lubridate'))
+{
+  install.packages("lubridate")
+}
+if (!require('scales'))
+{
+  install.packages("scales")
+}
+
+library(tidyverse) # General use data analysis toolkit
+library(ggplot2) # Basic plotting and graphics
+library(dplyr) # Data manipulation
+library(lubridate) # Dates, enough said
+library(scales) # I wanted to show a number in charts instead of scientific notation..
+```
+
+### Import data into R studio
+```{R CSV_input, message=TRUE, warning=FALSE}
+Feb22 <- read.csv("202202-divvy-tripdata.csv")
+Mar22 <- read.csv("202203-divvy-tripdata.csv")
+Apr22 <- read.csv("202204-divvy-tripdata.csv")
+May22 <- read.csv("202205-divvy-tripdata.csv")
+Jun22 <- read.csv("202206-divvy-tripdata.csv")
+Jul22 <- read.csv("202207-divvy-tripdata.csv")
+Aug22 <- read.csv("202208-divvy-tripdata.csv")
+Sep22 <- read.csv("202209-divvy-tripdata.csv")
+Oct22 <- read.csv("202210-divvy-tripdata.csv")
+Nov22 <- read.csv("202211-divvy-tripdata.csv")
+Dec22 <- read.csv("202212-divvy-tripdata.csv")
+Jan23 <- read.csv("202301-divvy-tripdata.csv")
+```
+
+
+
+## Merge all information into a data frame
+Merging all the imported dataframes into a single long set of data.
+```{R Merger}
+
+rawtripdata <- rbind(Feb22, Mar22, Apr22, May22, Jun22, Jul22, Aug22, Sep22, Oct22, Nov22, Dec22, Jan23)
+```
+
+
+## *PROCESS*
+### Cleaning and Preparing The New Dataset
+
+
+### Steps within this section:
+  * Confirm consistency within the new data set
+  * Transform the data ranges in a new column to show the duration of rides
+  * Verify the integrity of the newly constructed data
+  * Resave the new data set for further analysis
+  
+The following code chunk shows us the top 6, bottom 6 and an output of general information of the data set including things like nulls. We can deal with these in the next code chunk. *I am not showing the output of the code as it would run on for pages, the code can be edited to show these if desired, I just made them comments to save processing time over repeated renders.* 
+``` {R Cleaning_the_data}
+# head(rawtripdata) The top 6 rows in the data set
+# tail(rawtripdata) The bottom 6 rows of the data set
+# ncol(rawtripdata) The number of columns as an output
+# nrow(rawtripdata) #The number of entries in the data frame as an output, this will be explained further.
+# summary(rawtripdata) This function gives an overall summary of the data set 
+
+```
+
+
+```{R Col_names}
+colnames(rawtripdata)
+
+```
+
+### Now to fix the 'NAs' within the dataset
+```{R NA_elimination}
+# The number of rows to be scrubbed for incomplete data
+sum(is.na(rawtripdata))
+rawtripdata <- na.omit(rawtripdata)
+# The new number of entries in the data set
+nrow(rawtripdata)
+# Number of rows containing 'NA" removed
+5754248 - nrow(rawtripdata)
+
+```
+### Creating date consistancies
+
+```{R started_at}
+# Dates are in YYYY-MM-DD format or MM/DD/YYYY, lets fix these
+start<-as.POSIXlt(rawtripdata$started_at, tz = "","%m/%d/%Y %H:%M")
+start<- data.frame(start)
+start<- (start[1:nrow(na.omit(start)),])
+start<- data.frame(start)
+
+
+
+start1<-as.POSIXlt(rawtripdata$started_at, tz = "","%Y-%m-%d %H:%M")
+start1<- data.frame(start1)
+start1<- (start1[(nrow(start)+1):nrow(start1),])
+start1<-data.frame(start1)
+
+
+names(start)<- "start"
+names(start1)<- "start"
+start_time<- (rbind(start,start1))
+rawtripdata$started_at <- NULL
+rawtripdata['started_at']<- start_time
+```
+
+```{R ended_at}
+end<-(as.POSIXlt(rawtripdata$ended_at, tz = "","%m/%d/%Y %H:%M"))
+end<- data.frame(end)
+end<- (end[1:nrow(na.omit(end)),])
+end<-data.frame(end)
+
+
+end1<-(as.POSIXlt(rawtripdata$ended_at, tz = "","%Y-%m-%d %H:%M"))
+end1<- data.frame(end1)
+end1<- (end1[(nrow(end)+1):nrow(end1),])
+end1<-data.frame(end1)
+
+
+names(end)<- "end"
+names(end1)<- "end"
+end_time<- (rbind(end,end1))
+rawtripdata$ended_at<- NULL
+rawtripdata['ended_at']<- end_time
+```
+
+```{R Dayofweek}
+rawtripdata$date <- as.Date(rawtripdata$started_at) #The default format is yyyy-mm-dd
+rawtripdata$yearmonth <- format(as.Date(rawtripdata$date), "%Y-%m") # This is added in later as the way it wanted to order the months for charts was not in order
+rawtripdata$month <- format(as.Date(rawtripdata$date), "%m")
+rawtripdata$day <- format(as.Date(rawtripdata$date), "%d")
+rawtripdata$year <- format(as.Date(rawtripdata$date), "%Y")
+rawtripdata$day_of_week <- format(as.Date(rawtripdata$date), "%A")
+
+```
+
+### Now that we have ride start and end times sorted out we can find how long the rides are in a new colomn named "ride_length"
+
+```{R ride_length}
+ride_length_mins <- difftime(end_time [,], start_time[,], units = "mins")
+ride_length_mins <- data.frame(ride_length_mins) # The first line made a list, now we are making it a table to merge onto the end of the main table
+rawtripdata <- cbind(rawtripdata, ride_length_mins)
+```
+
+Now that we have a set of data that includes ride duration we can see if there are any duplicate ride IDs and ride length
+
+### Consistancy and New Data
+Running the summary command we find that the min for ride length is technically negative so we can get rid of those as it would take forever to swap them around
+```{R clean_data}
+
+cleaned_data <- rawtripdata %>% 
+  filter(ride_length_mins >0) # This makes the new data frame cleaned_data and shows only the ride lengths that are positive
+sum(duplicated(cleaned_data$ride_id)) # Now a check for any duplicated ride IDs in the new data
+# A prayer was said during the calculation for duplicates.. it failed the first time..
+
+```
+
+## *ANALYSIS*
+### Lets go ahead and get some information about the data we have cleaned:
+
+### Steps within this section:
+  * Gather baseline data about riders dependent upon member status
+  * Make corrections to allow for the day of the week to be shown in charts later on
+
+An Overview of the new data frame and comparisons between casual and member users
+```{R base_analysis}
+
+summary(cleaned_data)
+
+
+aggregate(cleaned_data$ride_length_mins ~ cleaned_data$member_casual, FUN = mean)
+aggregate(cleaned_data$ride_length_mins ~ cleaned_data$member_casual, FUN = median)
+aggregate(cleaned_data$ride_length_mins ~ cleaned_data$member_casual, FUN = max)
+aggregate(cleaned_data$ride_length_mins ~ cleaned_data$member_casual, FUN = min)
+
+
+```
+
+Let's take a look at the average ride time for members vs casual users, by day of the week, while correcting the order for day of week.
+```{R base_analysis2}
+
+
+cleaned_data$day_of_week <- ordered(cleaned_data$day_of_week, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+aggregate(cleaned_data$ride_length_mins ~ cleaned_data$member_casual + cleaned_data$day_of_week, FUN = mean)
+
+# Ridership by weekday and type
+cleaned_data %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% # Creating weekday field
+  group_by(member_casual, weekday) %>% # Grouping member status and weekday
+  summarise(number_of_rides = n(), average_duration = mean(ride_length_mins))%>% 
+  arrange(member_casual, weekday)# Average average duration and number of rides
+            
+```
+
+## *SHARE*
+
+### Steps within this section:
+  * Create accessible visuals for member vs casual riders based on number and duration of rides
+  * Create visuals for how the riders use the services of the company throughout the last year
+  
+The following code chunks are made to create the charts for a presentation, comments are to show what the graph should display.
+Showing the casual vs member bike use by day
+```{R Viz_1, message=FALSE, warning=FALSE}
+
+cleaned_data %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n(), average_duration = mean(ride_length_mins))%>% 
+  arrange(member_casual, weekday) %>% 
+  ggplot(aes(x = weekday, y = number_of_rides, fill = member_casual)) +
+  ggtitle("Casual and Member Rider \n by Weekday") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_discrete(name = "Member Type", breaks = c("casual","member"), labels = c("Casual", "Member")) +
+  labs(x = "Weekday", y = "Average Duration") +
+  scale_y_continuous(labels = label_comma()) +
+  geom_col(position = "dodge")
+```
+
+
+Showing the average duration of member vs casual rides
+```{R Viz_2, message=FALSE, warning=FALSE}
+
+cleaned_data %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n(), average_ride = mean(ride_length_mins)) %>% 
+  arrange(member_casual,weekday) %>% 
+  ggplot(aes(x = average_ride ,y = weekday, fill = member_casual)) +
+  ggtitle("Average Ride Duration \n by Weekday") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Duration in Munutes", y = "Weekday") +
+  scale_fill_manual(name = "Member Type", breaks = c("casual","member"), labels = c("Casual", "Member"),values = c("#0072B2", "#DDCC77")) +
+  geom_col(position = "dodge")
+  facet_wrap(~member_casual)
+```
+
+
+Showing the averageof  each rider type in each month
+```{R Viz_3, fig.width = 20, fig.height = 15}
+
+cleaned_data %>% 
+  group_by(yearmonth, member_casual)%>% 
+  arrange(yearmonth, member_casual) %>%
+  summarise(number_of_rides = n(), average_ride = mean(ride_length_mins)) %>%
+  ggplot(aes(x = yearmonth , y = average_ride, fill = member_casual)) +
+  ggtitle("Ride Duration \n by Month") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Total Munutes", y = "Month") +
+  scale_fill_manual(name = "Member Type", breaks = c("casual","member"), labels = c("Casual", "Member"),values = c("#0072B2", "#D81B60")) +
+  geom_col(position = "dodge") +
+  facet_wrap(~ member_casual)
+```
+
+
+## *ACT*
+
+Actions of deliverable requests:
+
+1. A clear statement of the business task
+
+The business task in this situation is to provide evidence of how each type of user uses the service and determine any trends within the membership types and time of year as well as weekday. Collect, clean and interpret the information to deliver a clear and concise set of business recommendations to move on based on available data.
+
+2. A description of all data sources used
+
+
+The sources used are the company data that was delivered in a CSV format and then loaded into RStudio.
+
+3. Documentation of any cleaning or manipulation of data
+
+For cleaning we did an 'NA' sweep of the data to ensure that there were no NA columns in the data set and did a duplicate check to ensure that no data was specifically counted twice, this is to allow us to merge in the data from different sources and still make sure that we were using all available and complete data. After getting rid of any NA or duplicate entries we started the transformation process by calculating out the ride lengths for each entry in the data set. This gave us information about when the ride started, ended, and the duration of the ride. I then clarified the day of week using the as.Date function.
+
+4. A summary of your analysis
+
+We have found that the average casual rider is usually more active during the middle months of the year likely due to travel times for vacationers and the weather that would entail. For member users we see that they are most likely to use the bikes during what would be considered standard business days and therefore can likely determine that many use them to get to work. 
+
+5. Supporting visualizations and key findings
+
+See above for visualizations. Key findings included showing that the Member riders tend to use the bike system for commuting, displayed by their normally minimally moving line for total minutes aside from the outsider months of February, March and July which can be explained as new years resolutions and the start of summer when people may try to commute to work and changing over to members as we see a drastic drop in casual riders for those months. We find a large uptick in casual riders starting in March to indicate the end of winter in the city and that people are out riding this time of year. Through these finding we are able to give our recommendations below.
+
+6. Your top three recommendations based on your analysis
+
+Recommendations for the company:
+
+* Ride duration can lead to an increase in revenue, many who are taking the bikes to work are likely to do so because it is cheaper or more efficient than driving a car or taking the city bus system, therefore with a marginal increase or a potential change over to a monthly membership at a slightly higher cost in comparison to a person declining membership due to weather in half the year. This would also give us data on current member status to ensure that maintenance and supply issues can be taken care of as needed. This includes the fact that the casual membership appears to disappear after July of 2022 and all members appear to be annual members now.
+
+* Use a membership rebate to entice more members as membership appear to be on a decline, likely due to time of year being fall and winter when it is likely to rain or even snow in Chicago.
+
+* Member rides are shown to be higher during the week which would show that they use them for getting to work and the largest number of casual riders is during the weekend, perhaps a plan for a commuting and a weekend pass could be made to further increase the transition rate of casual riders into member riders.
